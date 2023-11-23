@@ -4,14 +4,9 @@
     <label class="control-label" for="endpoint">Endpoint Region:</label>
     <div class="controls">
         <select name="payment_data[processor_params][endpoint]" id="endpoint" value="{$processor_params.endpoint}">
-            <option value="ARE">United Arab Emirates</option>
-            <option value="SAU">Saudi Arabia</option>
-            <option value="OMN">Oman</option>
-            <option value="JOR">Jordan</option>
-            <option value="EGY">Egypt</option>
-            <option value="IRQ">Iraq</option>
-            <option value="GLOBAL">Global</option>
-            <!-- <option value="DEMO">Demo</option> -->
+            {foreach $endpoints as $k=>$v}
+            <option value="{$k}">{$v}</option>
+            {/foreach}
         </select>
     </div>
 </div>
@@ -41,6 +36,16 @@
 </div>
 
 <div class="control-group">
+    <label class="control-label" for="iframe_mode">{__("iframe_mode")}:</label>
+    <div class="controls">
+        <select name="payment_data[processor_params][iframe_mode]" id="iframe_mode">
+            <option value="N">{__("disabled")}</option>
+            <option value="Y">{__("enabled")}</option>
+        </select>
+    </div>
+</div>
+
+<div class="control-group">
     <label class="control-label" for="order_status_after_payment">Order Status After Payment:</label>
     <div class="controls">
         <select name="payment_data[processor_params][order_status_after_payment]" id="order_status_after_payment" value="{}">
@@ -60,4 +65,5 @@
     document.getElementById('endpoint').value = '{$processor_params.endpoint}';
     document.getElementById('order_status_after_payment').value = '{$processor_params.order_status_after_payment}';
     document.getElementById('hide_shipping').value = '{$processor_params.hide_shipping}';
+    document.getElementById('iframe_mode').value = '{$processor_params.iframe_mode}';
 </script>
