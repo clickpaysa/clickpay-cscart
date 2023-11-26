@@ -22,6 +22,12 @@ function paymentPrepare($processor_data, $order_info, $order_id)
     $hide_shipping = (bool)ClickpayAdapter::getConfig($processor_data, 'hide_shipping');
     $iframe_mode = ClickpayAdapter::getConfig($processor_data, 'iframe_mode') == 'Y';
 
+    $alt_currency_enable = (bool)ClickpayAdapter::getConfig($processor_data, 'alt_currency_enable');
+    $alt_currency = ClickpayAdapter::getConfig($processor_data, 'alt_currency');
+
+    // theme config
+    $config_id = ClickpayAdapter::getConfig($processor_data, 'config_id') ?? "";
+
     $session = Tygh::$app['session'];
     $cid = ($session->getID());
 
@@ -92,8 +98,13 @@ function paymentPrepare($processor_data, $order_info, $order_id)
         ->set07URLs($return_url, $callback_url)
         ->set08Lang($lang_code)
         ->set09Framed($iframe_mode, "top")
+        ->set11ThemeConfigId($config_id)
         ->set50UserDefined($cid, $iframe_mode)
         ->set99PluginInfo('CS-Cart', PRODUCT_VERSION, CLICKPAY_PAYPAGE_VERSION);
+
+    if ($alt_currency_enable) {
+        $pt_holder->set12AltCurrency(_get_alt_currency($alt_currency));
+    }
 
     $post_data = $pt_holder->pt_build();
 
@@ -225,7 +236,8 @@ function _validate_amount($order_id, $trx)
     $order = fn_get_order_info($order_id);
 
     $same_payment =
-        strcasecmp($order['secondary_currency'], $trx->cart_currency) == 0
+        // strcasecmp($order['secondary_currency'], $trx->cart_currency) == 0
+        strcasecmp(CART_PRIMARY_CURRENCY, $trx->cart_currency) == 0
         && $order['total'] == $trx->cart_amount;
 
     if (!$same_payment) {
@@ -307,4 +319,13 @@ function fn_retrun()
         fn_order_placement_routines('route', $order_id);
     }
     exit;
+}
+
+function _get_alt_currency($alt_currency)
+{
+    if (isset($alt_currency) && !empty($alt_currency)) {
+        return $alt_currency;
+    }
+
+    return $_SESSION['settings']['secondary_currencyC']['value'];
 }
