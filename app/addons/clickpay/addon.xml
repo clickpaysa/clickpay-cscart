@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 
 <addon scheme="3.0" edition_type="ROOT">
-    <id>paytabs</id>
+    <id>clickpay</id>
     <version>3.1.2</version>
     <default_language>en</default_language>
     <priority>100</priority>
     <status>active</status>
     <functions>
-        <item for="install">fn_paytabs_install</item>
-        <item for="uninstall">fn_paytabs_uninstall</item>
+        <item for="install">fn_clickpay_install</item>
+        <item for="uninstall">fn_clickpay_uninstall</item>
     </functions>
 </addon>

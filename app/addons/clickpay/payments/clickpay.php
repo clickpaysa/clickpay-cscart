@@ -4,7 +4,7 @@ use Tygh\Http;
 use Tygh\Registry;
 
 defined('BOOTSTRAP') or die('Access denied');
-require_once('paytabs_core.php');
+require_once('clickpay_core.php');
 
 
 $payment_completed = defined('PAYMENT_NOTIFICATION');
@@ -17,16 +17,16 @@ if ($payment_completed) {
 
 function paymentPrepare($processor_data, $order_info, $order_id)
 {
-    $paytabs_api = PaytabsAdapter::getPaytabsApi($processor_data);
+    $clickpay_api = ClickpayAdapter::getClickpayApi($processor_data);
 
-    $hide_shipping = (bool)PaytabsAdapter::getConfig($processor_data, 'hide_shipping');
-    $iframe_mode = PaytabsAdapter::getConfig($processor_data, 'iframe_mode') == 'Y';
+    $hide_shipping = (bool)ClickpayAdapter::getConfig($processor_data, 'hide_shipping');
+    $iframe_mode = ClickpayAdapter::getConfig($processor_data, 'iframe_mode') == 'Y';
 
     $session = Tygh::$app['session'];
     $cid = ($session->getID());
 
-    $callback_url = fn_url("payment_notification.callback?payment=paytabs", AREA, 'current');
-    $return_url = fn_url("payment_notification.return?payment=paytabs&iframe_mode=" . $iframe_mode, AREA, 'current');
+    $callback_url = fn_url("payment_notification.callback?payment=clickpay", AREA, 'current');
+    $return_url = fn_url("payment_notification.return?payment=clickpay&iframe_mode=" . $iframe_mode, AREA, 'current');
     $return_url = fn_link_attach($return_url, $session->getName() . '=' . $session->getID());
 
     $total = $order_info['total'];
@@ -60,10 +60,10 @@ function paymentPrepare($processor_data, $order_info, $order_id)
 
     $lang_code = $order_info['lang_code'];
 
-    $pt_holder = new PaytabsRequestHolder();
+    $pt_holder = new ClickpayRequestHolder();
     $pt_holder
         ->set01PaymentCode('all', false)
-        ->set02Transaction(PaytabsEnum::TRAN_TYPE_SALE, PaytabsEnum::TRAN_CLASS_ECOM)
+        ->set02Transaction(ClickpayEnum::TRAN_TYPE_SALE, ClickpayEnum::TRAN_CLASS_ECOM)
         ->set03Cart($order_id, $currency, $total, $products_str)
         ->set04CustomerDetails(
             "{$firstname} {$lastname}",
@@ -93,21 +93,21 @@ function paymentPrepare($processor_data, $order_info, $order_id)
         ->set08Lang($lang_code)
         ->set09Framed($iframe_mode, "top")
         ->set50UserDefined($cid, $iframe_mode)
-        ->set99PluginInfo('CS-Cart', PRODUCT_VERSION, PAYTABS_PAYPAGE_VERSION);
+        ->set99PluginInfo('CS-Cart', PRODUCT_VERSION, CLICKPAY_PAYPAGE_VERSION);
 
     $post_data = $pt_holder->pt_build();
 
-    $paypage = $paytabs_api->create_pay_page($post_data);
+    $paypage = $clickpay_api->create_pay_page($post_data);
 
     $success = $paypage->success;
     $message = $paypage->message;
 
     // $_logPaypage = json_encode($paypage);
-    PaytabsHelper::log("Order {$order_id}, Create paypage result: sucess ? {$success} message {$message}", 1);
+    ClickpayHelper::log("Order {$order_id}, Create paypage result: sucess ? {$success} message {$message}", 1);
 
     if ($success) {
         $url = $paypage->redirect_url;
-        fn_create_payment_form($url, [], 'PayTabs server', false, 'get');
+        fn_create_payment_form($url, [], 'Clickpay server', false, 'get');
     } else {
         if ($iframe_mode) {
             echo $message;
@@ -121,7 +121,7 @@ function paymentPrepare($processor_data, $order_info, $order_id)
 
 
 /**
- * Weebhook/Callback called by PayTabs's server after completing the payment
+ * Weebhook/Callback called by Clickpay's server after completing the payment
  */
 function paymentComplete($mode)
 {
@@ -135,7 +135,7 @@ function paymentComplete($mode)
 
 function fn_callback()
 {
-    $response_data = PaytabsHelper::read_ipn_response();
+    $response_data = ClickpayHelper::read_ipn_response();
 
     if (!$response_data) {
         return;
@@ -154,27 +154,27 @@ function fn_callback()
     $ifm_mode = isset($response_data->user_defined->udf2) ? ($response_data->user_defined->udf2) : false;
     //$response_data->payment_result->response_status !=="C"
 
-    PaytabsHelper::log("session {session: $session_id } iframe: {$ifm_mode}");
+    ClickpayHelper::log("session {session: $session_id } iframe: {$ifm_mode}");
 
     if ($ifm_mode) {
         if ($session_id) {
             $order_id = fn_callback_frame($session_id);
         } else {
             //on cancellation the user_defined will be null and session_id will be false
-            PaytabsHelper::log("iFrame order {$order_id} canceled", 3);
+            ClickpayHelper::log("iFrame order {$order_id} canceled", 3);
             return;
         }
     }
 
-    if (!fn_check_payment_script('paytabs.php', $order_id)) {
+    if (!fn_check_payment_script('clickpay.php', $order_id)) {
         die();
     }
 
     $payment_id = db_get_field("SELECT payment_id FROM ?:orders WHERE order_id = ?i", $order_id);
     $processor_data = fn_get_payment_method_data($payment_id);
-    $paytabsApi = PaytabsAdapter::getPaytabsApi($processor_data);
+    $clickpayApi = ClickpayAdapter::getClickpayApi($processor_data);
 
-    $result = $paytabsApi->read_response(true);
+    $result = $clickpayApi->read_response(true);
     if (!$result) {
         return;
     }
@@ -214,7 +214,7 @@ function fn_callback()
         fn_finish_payment($order_id, $pp_response, false);
     }
 
-    PaytabsHelper::log("Finish payment, Tran {$transaction_ref}  success {$success} holding {$is_on_hold} pending {$is_pending}, Order {$order_id} ", 1);
+    ClickpayHelper::log("Finish payment, Tran {$transaction_ref}  success {$success} holding {$is_on_hold} pending {$is_pending}, Order {$order_id} ", 1);
 
     exit;
     //fn_order_placement_routines('route', $order_id);
@@ -229,7 +229,7 @@ function _validate_amount($order_id, $trx)
         && $order['total'] == $trx->cart_amount;
 
     if (!$same_payment) {
-        PaytabsHelper::log("Order {$order_id}, Expected ({$order['total']} {$order['secondary_currency']}), Received {$trx->cart_amount} {$trx->tran_currency}", 2);
+        ClickpayHelper::log("Order {$order_id}, Expected ({$order['total']} {$order['secondary_currency']}), Received {$trx->cart_amount} {$trx->tran_currency}", 2);
         return false;
     }
 
@@ -239,7 +239,7 @@ function _validate_amount($order_id, $trx)
 
 function fn_callback_frame($session_id)
 {
-    $response_data = PaytabsHelper::read_ipn_response();
+    $response_data = ClickpayHelper::read_ipn_response();
     if (!$response_data) {
         return;
     }
@@ -251,7 +251,7 @@ function fn_callback_frame($session_id)
     $cart = &Tygh::$app['session']['cart'];
     $auth = &Tygh::$app['session']['auth'];
 
-    PaytabsHelper::log("iFrame: order_once {$order_id}, Session {$session_id}");
+    ClickpayHelper::log("iFrame: order_once {$order_id}, Session {$session_id}");
 
     list($order_id, $process_payment) = fn_place_order($cart, $auth);
     // store additional order data
@@ -263,7 +263,7 @@ function fn_callback_frame($session_id)
             array('order_id' => $order_id, 'type' => 'E', 'data' => $order_nonce)
         ));
     }
-    PaytabsHelper::log("iFrame: order_once converted to order_id {$order_id} ");
+    ClickpayHelper::log("iFrame: order_once converted to order_id {$order_id} ");
     return $order_id;
 }
 

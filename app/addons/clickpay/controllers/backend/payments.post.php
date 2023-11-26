@@ -16,8 +16,8 @@ if (!defined('BOOTSTRAP')) {
 
 if ($mode == 'processor') {
 
-    require_once(DIR_ROOT.'/app/addons/paytabs/payments/paytabs_core.php');
-    $endpoints = PaytabsApi::getEndpoints();
+    require_once(DIR_ROOT.'/app/addons/clickpay/payments/clickpay_core.php');
+    $endpoints = ClickpayApi::getEndpoints();
 
     /** @var \Tygh\SmartyEngine\Core $view */
     $view = Tygh::$app['view'];

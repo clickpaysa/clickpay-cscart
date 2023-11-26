@@ -1,28 +1,28 @@
 <?php
 
-//use Tygh\Payments\Processors\PayTabs;
+//use Tygh\Payments\Processors\Clickpay;
 
 if (!defined('BOOTSTRAP')) {
     die('Access denied');
 }
 
-function fn_paytabs_install()
+function fn_clickpay_install()
 {
     pt_remove_records();
 
     $_data = array(
-        'processor' => 'PayTabs',
-        'processor_script' => 'paytabs.php',
+        'processor' => 'Clickpay',
+        'processor_script' => 'clickpay.php',
         'processor_template' => 'views/orders/components/payments/cc_outside.tpl',
-        'admin_template' => 'paytabs.tpl',
+        'admin_template' => 'clickpay.tpl',
         'callback' => 'N',
         'type' => 'P',
-        'addon' => 'paytabs'
+        'addon' => 'clickpay'
     );
     db_query("INSERT INTO ?:payment_processors ?e", $_data);
 }
 
-function fn_paytabs_uninstall()
+function fn_clickpay_uninstall()
 {
     pt_remove_records();
     pt_remove_files();
@@ -30,10 +30,10 @@ function fn_paytabs_uninstall()
 
 function pt_remove_files()
 {
-    fn_rm(DIR_ROOT . '/design/backend/templates/views/payments/components/cc_processors/paytabs.tpl');
-    fn_rm(DIR_ROOT . '/app/addons/paytabs/addon.xml');
-    fn_rm(DIR_ROOT . '/var/langs/en/addons/paytabs.po');
-    fn_rm(DIR_ROOT . '/paytabs_logo.png');
+    fn_rm(DIR_ROOT . '/design/backend/templates/views/payments/components/cc_processors/clickpay.tpl');
+    fn_rm(DIR_ROOT . '/app/addons/clickpay/addon.xml');
+    fn_rm(DIR_ROOT . '/var/langs/en/addons/clickpay.po');
+    fn_rm(DIR_ROOT . '/clickpay_logo.png');
     fn_rm(DIR_ROOT . '/README.md');
 }
 
@@ -44,7 +44,7 @@ function pt_remove_records()
 
     $processor_id = $db->getField(
         'SELECT processor_id FROM ?:payment_processors WHERE processor_script = ?s',
-        'paytabs.php'
+        'clickpay.php'
     );
 
     if (!$processor_id) {
@@ -57,17 +57,17 @@ function pt_remove_records()
 }
 
 
-function fn_is_paytabs_refund_performed($return_id)
+function fn_is_clickpay_refund_performed($return_id)
 {
     $return_data = fn_get_return_info($return_id);
     $return_data['extra'] = empty($return_data['extra']) ? array() : unserialize($return_data['extra']);
-    return !empty($return_data['extra']['paytabs_refund_transaction_id']);
+    return !empty($return_data['extra']['clickpay_refund_transaction_id']);
 }
 
 
-function fn_is_paytabs_processor($processor_id = 0)
+function fn_is_clickpay_processor($processor_id = 0)
 {
-    return (bool)db_get_field("SELECT 1 FROM ?:payment_processors WHERE processor_id = ?i AND addon = ?s", $processor_id, 'paytabs');
+    return (bool)db_get_field("SELECT 1 FROM ?:payment_processors WHERE processor_id = ?i AND addon = ?s", $processor_id, 'clickpay');
 }
 
 
@@ -95,14 +95,14 @@ function fn_process_refund($order_info, $amount = null, $reason = '', $type = 'F
     if (empty($reason)) $reason = 'Admin request';
     else $reason = 'CS-Cart admin: ' . $reason;
 
-    require_once(DIR_ROOT . '/app/addons/paytabs/payments/paytabs_core.php');
+    require_once(DIR_ROOT . '/app/addons/clickpay/payments/clickpay_core.php');
 
-    $pt_refundHolder = new PaytabsFollowupHolder();
+    $pt_refundHolder = new ClickpayFollowupHolder();
     $pt_refundHolder
-        ->set02Transaction(PaytabsEnum::TRAN_TYPE_REFUND, PaytabsEnum::TRAN_CLASS_ECOM)
+        ->set02Transaction(ClickpayEnum::TRAN_TYPE_REFUND, ClickpayEnum::TRAN_CLASS_ECOM)
         ->set03Cart($order_id, $currency, $amount, $reason)
         ->set30TransactionInfo($transaction_id)
-        ->set99PluginInfo('CS-Cart', PRODUCT_VERSION, PAYTABS_PAYPAGE_VERSION);
+        ->set99PluginInfo('CS-Cart', PRODUCT_VERSION, CLICKPAY_PAYPAGE_VERSION);
 
     $values = $pt_refundHolder->pt_build();
 
@@ -110,9 +110,9 @@ function fn_process_refund($order_info, $amount = null, $reason = '', $type = 'F
     $payment_id = $db->getField("SELECT payment_id FROM ?:orders WHERE order_id = ?i", $order_id);
     $processor_data = fn_get_payment_method_data($payment_id);
 
-    $paytabsApi = PaytabsAdapter::getPaytabsApi($processor_data);
+    $currencylickpayApi = ClickpayAdapter::getClickpayApi($processor_data);
 
-    $refundRes = $paytabsApi->request_followup($values);
+    $refundRes = $currencylickpayApi->request_followup($values);
 
     $tran_ref = @$refundRes->tran_ref;
     $success = $refundRes->success;
@@ -121,7 +121,7 @@ function fn_process_refund($order_info, $amount = null, $reason = '', $type = 'F
 
     $db->query("UPDATE ?:rma_returns SET comment = CONCAT(comment, ' - ' , ?s) WHERE return_id = ?i", $message, $return_id);
 
-    PaytabsHelper::log("Refund request Done, Tran {$tran_ref}, payment_id {$payment_id}, Order {$order_id} - {$success} {$message}", 1);
+    ClickpayHelper::log("Refund request Done, Tran {$tran_ref}, payment_id {$payment_id}, Order {$order_id} - {$success} {$message}", 1);
 
     if ($success) {
         return $tran_ref;
@@ -134,7 +134,7 @@ function fn_process_refund($order_info, $amount = null, $reason = '', $type = 'F
 }
 
 
-function fn_paytabs_rma_update_details_post(&$data, &$show_confirmation_page, &$show_confirmation, &$is_refund, &$_data, &$confirmed)
+function fn_clickpay_rma_update_details_post(&$data, &$show_confirmation_page, &$show_confirmation, &$is_refund, &$_data, &$confirmed)
 {
     $change_return_status = $data['change_return_status'];
     if (($show_confirmation == false ||
@@ -148,7 +148,7 @@ function fn_paytabs_rma_update_details_post(&$data, &$show_confirmation_page, &$
             $st_inv[$change_return_status['status_to']]['params']['inventory'] != 'D'
         ) {
 
-            if (!empty($order_info['payment_info']['transaction_id']) && !fn_is_paytabs_refund_performed($change_return_status['return_id'])) {
+            if (!empty($order_info['payment_info']['transaction_id']) && !fn_is_clickpay_refund_performed($change_return_status['return_id'])) {
                 $return_data = fn_get_return_info($change_return_status['return_id']);
                 if (!empty($order_info['returned_products'])) {
                     foreach ($order_info['returned_products'] as $cart_id => $product) {
@@ -176,7 +176,7 @@ function fn_paytabs_rma_update_details_post(&$data, &$show_confirmation_page, &$
                 $result = fn_process_refund($order_info, $amount, $refund_reason, $refund_type, $change_return_status['return_id']);
                 if ($result) {
                     $extra = empty($return_data['extra']) ? array() : unserialize($return_data['extra']);
-                    $extra['paytabs_refund_transaction_id'] = $result;
+                    $extra['clickpay_refund_transaction_id'] = $result;
                     Tygh::$app['db']->query("UPDATE ?:rma_returns SET extra = ?s WHERE return_id = ?i", serialize($extra), $change_return_status['return_id']);
                     fn_set_notification('N', __('notice'), 'Refund Done Successfully');
                 } else {

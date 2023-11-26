@@ -1,6 +1,6 @@
-# PayTabs - CS-Cart
+# Clickpay - CS-Cart
 
-The official PayTabs CS-Cart Plugin
+The official Clickpay CS-Cart Plugin
 
 ---
 
@@ -24,7 +24,7 @@ This happens sometimes when a previous version exists.
 1. Download the latest release
 2. Copy the files to your root cs-cart folder.
 3. Navigate to: `CS-Cart admin panel >> Add-ons >> Manage Add-ons`
-4. Locate `PayTabs` and clik on `Install` button
+4. Locate `Clickpay` and clik on `Install` button
 
 ---
 
@@ -32,9 +32,9 @@ This happens sometimes when a previous version exists.
 
 1. Navigate to: `"CS-Cart admin panel" >> Administration >> Payment methods`
 2. Click on `Add Payment Method`
-3. Enter "PayTabs" in the Name field, select PayTabs from the Processor list, use the provided 'paytabs_logo.png' as the Icon
+3. Enter "Clickpay" in the Name field, select Clickpay from the Processor list, use the provided 'clickpay_logo.png' as the Icon
 4. Click **Create**
-5. Edit the newly added Payment Method and navigate to the `Configure` tab and supply your PayTabs Credentials
+5. Edit the newly added Payment Method and navigate to the `Configure` tab and supply your Clickpay Credentials
 
 ---
 
@@ -70,7 +70,7 @@ To request a Refund:
 
 1. Navigate to the order details page
 2. Click on `Request a replacement or a refund`
-3. Select `Refund`, selecte the products & quantities, add any comments
+3. Select `Refund`, select the products & quantities, add any comments
 4. Click `Return`
 
 ***Notes:***
@@ -87,9 +87,9 @@ Clear cache from `var\cache\templates\backend` before reinstalling the plugin.
 
 ## Log Access
 
-### PayTabs custom log
+### Clickpay custom log
 
-1. Access `debug_paytabs.log` file found at: `/var/debug_paytabs.log`
+1. Access `debug_clickpay.log` file found at: `/var/debug_clickpay.log`
 
 ---
 

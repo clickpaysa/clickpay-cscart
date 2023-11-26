@@ -1,4 +1,4 @@
-<h1>PayTabs</h1>
+<h1>Clickpay</h1>
 
 <div class="control-group">
     <label class="control-label" for="endpoint">Endpoint Region:</label>
